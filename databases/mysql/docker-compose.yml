@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mysql-db:
+    # 1. 이미지 및 컨테이너 설정
+    image: mysql:8.0               # MySQL 버전
+    container_name: custom-mysql    # 컨테이너 이름
+    restart: always                # 재부팅 시 자동 시작
+
+    # 2. 환경 변수
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password123 # Root 계정 비밀번호
+      MYSQL_USER: admin                     # 일반 사용자 ID
+      MYSQL_PASSWORD: password123           # 일반 사용자 Password
+      MYSQL_DATABASE: my_app_db             # 생성할 DB 이름
+      TZ: Asia/Seoul                        # 시간대 설정
+
+    # 3. 포트 포워딩
+    ports:
+      - "3306:3306"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./mysql_data:/var/lib/mysql               # 데이터 영구 저장
+      - ./init-sql:/docker-entrypoint-initdb.d    # 초기 SQL 스크립트 (테이블 생성 등)
+      - ./my-mysql.cnf:/etc/mysql/conf.d/my.cnf   # 커스텀 설정 파일 (문자셋 등)
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                # 최대 CPU 50%
+          memory: 512M               # 최대 메모리 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크 (MySQL 전용 명령어 사용)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-ppassword123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# 네트워크 브릿지
+networks:
+  backend-network:
+    driver: bridge

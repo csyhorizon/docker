@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    # 1. 이미지 및 컨테이너 설정
+    image: postgres:15               # Version (alpine - 가벼운 버전)
+    container_name: custom-postgres  # Container Name
+    restart: always                  # Reboot Restart
+
+    # 2. 환경 변수
+    environment:
+      POSTGRES_USER: admin           # ID
+      POSTGRES_PASSWORD: password123 # Password
+      POSTGRES_DB: my_app_db         # Start DB Name
+      TZ: Asia/Seoul                 # TimeZone
+
+    # 3. 포트 포워딩
+    ports:
+      - "5432:5432"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data           # DB 저장소 주소
+      - ./init-sql:/docker-entrypoint-initdb.d             # 초기 테이블 생성 SQL
+      - ./my-postgres.conf:/etc/postgresql/postgresql.conf # 커스텀 설정 파일 연결
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                # 최대 CPU 점유율 : 50%
+          memory: 512M               # 최대 메모리     : 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d my_app_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# 네트워크 브릿지
+networks:
+  backend-network:
+    driver: bridge
+
+# 터널링 (포트포워딩 없이)
+# tunnel:
+#     image: cloudflare/cloudflared
+#     command: tunnel --url tcp://postgres-db:5432
