@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  kafka:
+    # 1. 이미지 및 컨테이너 설정
+    image: bitnami/kafka:3.5               # Kafka 버전
+    container_name: custom-kafka
+    restart: always
+
+    # 2. 환경 변수 (KRaft 모드 필수 설정)
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - TZ=Asia/Seoul
+
+    # 3. 포트 포워딩
+    ports:
+      - "9092:9092"                        # Kafka 브로커 포트
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./kafka_data:/bitnami/kafka        # 데이터 영구 저장
+
+    # 5. 리소스 제한 (Kafka는 메모리를 꽤 사용하므로 조금 더 높게 잡았습니다)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'                      # 최대 CPU 100%
+          memory: 1G                       # 최대 메모리 1GB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크
+    healthcheck:
+      test: ["CMD", "/opt/bitnami/kafka/bin/kafka-cluster.sh", "cluster-id", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

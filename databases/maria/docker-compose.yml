@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mariadb-db:
+    # 1. 이미지 및 컨테이너 설정
+    image: mariadb:10.11               # MariaDB LTS 버전
+    container_name: custom-mariadb     # 컨테이너 이름
+    restart: always                    # 재부팅 시 자동 시작
+
+    # 2. 환경 변수
+    environment:
+      MARIADB_ROOT_PASSWORD: root_password123 # Root 계정 비밀번호
+      MARIADB_USER: admin                     # 일반 사용자 ID
+      MARIADB_PASSWORD: password123           # 일반 사용자 Password
+      MARIADB_DATABASE: my_app_db             # 생성할 DB 이름
+      TZ: Asia/Seoul                          # 시간대 설정
+
+    # 3. 포트 포워딩 (MySQL과 중복 시 3307 등으로 변경 권장)
+    ports:
+      - "3306:3306"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./mariadb_data:/var/lib/mysql            # 데이터 영구 저장
+      - ./init-sql:/docker-entrypoint-initdb.d    # 초기 SQL 스크립트
+      - ./my-mariadb.cnf:/etc/mysql/conf.d/my.cnf # 커스텀 설정 파일
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                  # 최대 CPU 50%
+          memory: 512M                 # 최대 메모리 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크 (mariadb-admin 사용)
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "admin", "-ppassword123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

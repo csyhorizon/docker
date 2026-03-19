@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  meilisearch:
+    # 1. 이미지 및 컨테이너 설정
+    image: getmeili/meilisearch:latest
+    container_name: custom-meilisearch
+    restart: always
+
+    # 2. 환경 변수
+    environment:
+      MEILI_MASTER_KEY: password123        # API 접근을 위한 마스터 키
+      MEILI_ENV: development               # 실행 환경 (production/development)
+      TZ: Asia/Seoul
+
+    # 3. 포트 포워딩
+    ports:
+      - "7700:7700"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./meili_data:/meili_data           # 데이터 영구 저장
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    # 1. 이미지 및 컨테이너 설정
+    image: rabbitmq:3.12-management-alpine # Management UI 포함 버전
+    container_name: custom-rabbitmq
+    restart: always
+
+    # 2. 환경 변수
+    environment:
+      RABBITMQ_DEFAULT_USER: admin         # UI 및 접속용 ID
+      RABBITMQ_DEFAULT_PASS: password123   # UI 및 접속용 Password
+      TZ: Asia/Seoul                       # 시간대 설정
+
+    # 3. 포트 포워딩
+    ports:
+      - "5672:5672"                        # 메시징 포트
+      - "15672:15672"                      # Management UI 포트
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq  # 데이터 및 설정 영구 저장
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                      # 최대 CPU 50%
+          memory: 512M                     # 최대 메모리 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크 (rabbitmq-diagnostics 사용)
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

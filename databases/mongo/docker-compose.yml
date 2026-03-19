@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mongodb:
+    # 1. 이미지 및 컨테이너 설정
+    image: mongo:6.0                   # MongoDB 버전
+    container_name: custom-mongodb     # 컨테이너 이름
+    restart: always                    # 재부팅 시 자동 시작
+
+    # 2. 환경 변수
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin        # Root 계정 ID
+      MONGO_INITDB_ROOT_PASSWORD: password123  # Root 계정 Password
+      MONGO_INITDB_DATABASE: my_app_db         # 초기 생성 DB
+      TZ: Asia/Seoul                           # 시간대 설정
+
+    # 3. 포트 포워딩
+    ports:
+      - "27017:27017"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./mongo_data:/data/db                  # 데이터 영구 저장
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro # 초기 스크립트
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                  # 최대 CPU 50%
+          memory: 512M                 # 최대 메모리 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크 (mongosh 사용)
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

@@ -47,3 +47,8 @@ services:
 networks:
   backend-network:
     driver: bridge
+
+# 터널링 (포트포워딩 없이)
+# tunnel:
+#     image: cloudflare/cloudflared
+#     command: tunnel --url tcp://mysql-db:5432

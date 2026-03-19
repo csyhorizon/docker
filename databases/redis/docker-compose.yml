@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis-cache:
+    # 1. 이미지 및 컨테이너 설정
+    image: redis:7.0                   # Redis 버전
+    container_name: custom-redis       # 컨테이너 이름
+    restart: always                    # 재부팅 시 자동 시작
+
+    # 2. 환경 변수 및 실행 명령
+    environment:
+      TZ: Asia/Seoul                   # 시간대 설정
+    command: redis-server --requirepass password123 --appendonly yes # 비밀번호 및 데이터 영속성 설정
+
+    # 3. 포트 포워딩
+    ports:
+      - "6379:6379"
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./redis_data:/data             # 데이터 영구 저장
+      - ./redis.conf:/usr/local/etc/redis/redis.conf # 커스텀 설정 파일
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'                  # 최대 CPU 50%
+          memory: 512M                 # 최대 메모리 512MB
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+    # 7. 헬스 체크 (redis-cli 사용)
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "password123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend-network:
+    driver: bridge

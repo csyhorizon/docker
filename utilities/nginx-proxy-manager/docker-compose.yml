@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  nginx-proxy-manager:
+    # 1. 이미지 및 컨테이너 설정
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: custom-npm
+    restart: always
+
+    # 2. 환경 변수
+    environment:
+      TZ: Asia/Seoul
+
+    # 3. 포트 포워딩
+    ports:
+      - "80:80"                            # HTTP 트래픽
+      - "443:443"                          # HTTPS 트래픽
+      - "81:81"                            # 관리 콘솔 UI 포트
+
+    # 4. 볼륨 설정
+    volumes:
+      - ./npm_data:/data                   # 설정 데이터
+      - ./npm_letsencrypt:/etc/letsencrypt # SSL 인증서 저장
+
+    # 5. 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+    # 6. 네트워크 설정
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
