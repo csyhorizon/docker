@@ -1,38 +1,36 @@
 version: '3.8'
 
 services:
-  kafka:
+  elasticsearch:
     # 1. 이미지 및 컨테이너 설정
-    image: bitnami/kafka:3.5               # Kafka 버전
-    container_name: custom-kafka
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: custom-elasticsearch
     restart: always
 
-    # 2. 환경 변수 (KRaft 모드 필수 설정)
+    # 2. 환경 변수 (싱글 노드 설정)
     environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-      - ALLOW_PLAINTEXT_LISTENER=yes
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=false # 개발 편의를 위해 보안 비활성화
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - TZ=Asia/Seoul
 
     # 3. 포트 포워딩
     ports:
-      - "9092:9092"                        # Kafka 브로커 포트
+      - "9200:9200"
 
     # 4. 볼륨 설정
     volumes:
-      - ./kafka_data:/bitnami/kafka        # 데이터 영구 저장
+      - ./es_data:/usr/share/elasticsearch/data
 
-    # 5. 리소스 제한 (Kafka는 메모리를 꽤 사용하므로 조금 더 높게 잡았습니다)
+    # 5. 리소스 제한 (ES는 메모리를 많이 먹으므로 1G 권장)
     deploy:
       resources:
         limits:
-          cpus: '1.0'                      # 최대 CPU 100%
-          memory: 1G                       # 최대 메모리 1GB
+          cpus: '1.0'
+          memory: 1G
 
     # 6. 네트워크 설정
     networks:
@@ -40,8 +38,8 @@ services:
 
     # 7. 헬스 체크
     healthcheck:
-      test: ["CMD", "/opt/bitnami/kafka/bin/kafka-cluster.sh", "cluster-id", "--bootstrap-server", "localhost:9092"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 20s
       timeout: 10s
       retries: 5
 
